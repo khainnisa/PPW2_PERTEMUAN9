@@ -62,7 +62,7 @@
                     <td class="d-flex gap-2">
                         <!-- Tombol edit -->
                         <a href="{{ route('edit', $buku->id) }}" class="btn btn-warning">Edit</a>
-
+P
                         <!-- Tombol hapus -->
                         <form action="{{ route('destroy', $buku->id) }}" method="post" style="display:inline-block;">
                             @csrf

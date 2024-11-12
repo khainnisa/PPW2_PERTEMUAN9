@@ -7,14 +7,14 @@
     @if (count($errors) > 0)
     <ul class="alert alert-danger">
         @foreach ($errors->all() as $error)
-            </li>{{ $error }}</li>
+            <li>{{ $error }}</li>
         @endforeach
     </ul>
     @endif
 
     <h2>Edit Item</h2>
 
-    <form action="{{ route('update', $buku->id) }}" method="POST">
+    <form action="{{ route('update', $buku->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -42,6 +42,37 @@
             <input type="text" id="tgl_terbit" name="tgl_terbit" class="date form-control" placeholder="yyyy/mm/dd" value="{{ old('tgl_terbit', $buku->tgl_terbit) }}" >
         </div>
 
+        <!-- Input Thumbnail -->
+        <div class="form-group">
+            <label for="thumbnail">Thumbnail Buku:</label>
+            <input type="file" id="thumbnail" name="thumbnail" class="form-control">
+        </div>
+
+        <!-- Display Current Gallery Images -->
+        <div>Current Gallery Images:</div>
+        <div class="gallery_items mb-3">
+            @foreach($buku->galleries()->get() as $gallery)
+                <div class="gallery_item mb-2">
+                    <img
+                        class="rounded-full object-cover object-center"
+                        src="{{ asset($gallery->path) }}"
+                        alt=""
+                        width="200"
+                    />
+                </div>
+            @endforeach
+        </div>
+
+        <!-- Input Gallery for Adding New Images -->
+        <div>Tambah Gambar ke Gallery</div>
+        <div id="gallery-inputs">
+            <div class="file-input mb-3">
+                <input type="file" name="gallery[]" class="form-control">
+            </div>
+        </div>
+        
+        <button type="button" class="btn btn-secondary mt-2" onclick="addGalleryInput()">Tambah Gambar</button>
+
         <!-- Tombol Simpan -->
         <button type="submit" class="btn btn-primary mt-3">Simpan</button>
 
@@ -60,5 +91,19 @@
             autoclose: true
         });
     });
+
+    function addGalleryInput() {
+        const galleryContainer = document.getElementById('gallery-inputs');
+        const fileInputDiv = document.createElement('div');
+        fileInputDiv.className = 'file-input mb-3';
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.name = 'gallery[]';
+        input.className = 'form-control';
+
+        fileInputDiv.appendChild(input);
+        galleryContainer.appendChild(fileInputDiv);
+    }
 </script>
 @endsection

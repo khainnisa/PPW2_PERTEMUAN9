@@ -4,7 +4,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <div class="container">
 
-    @if (count($errors) > 0)
+    @if ($errors->any())
     <ul class="alert alert-danger">
         @foreach ($errors->all() as $error)
             <li>{{ $error }}</li>
@@ -27,23 +27,33 @@
         <!-- Input Penulis -->
         <div class="form-group">
             <label for="penulis">Penulis</label>
-            <input type="text" name="penulis" class="form-control" id="penulis" value="{{ old('penulis', $buku->penulis) }}" >
+            <input type="text" name="penulis" class="form-control" id="penulis" value="{{ old('penulis', $buku->penulis) }}">
         </div>
 
         <!-- Input Harga -->
         <div class="form-group">
             <label for="harga">Harga</label>
-            <input type="text" name="harga" class="form-control" id="harga" value="{{ old('harga', $buku->harga) }}" >
+            <input type="text" name="harga" class="form-control" id="harga" value="{{ old('harga', $buku->harga) }}">
         </div>
 
         <!-- Input Tanggal Terbit -->
         <div class="form-group">
             <label for="tgl_terbit">Tanggal Terbit</label>
-            <input type="text" id="tgl_terbit" name="tgl_terbit" class="date form-control" placeholder="yyyy/mm/dd" value="{{ old('tgl_terbit', $buku->tgl_terbit) }}" >
+            <input type="text" id="tgl_terbit" name="tgl_terbit" class="date form-control" placeholder="yyyy/mm/dd" value="{{ old('tgl_terbit', $buku->tgl_terbit) }}">
         </div>
 
         <!-- Input Thumbnail -->
         <div class="form-group">
+        <!-- Jika ada file thumbnail, tampilkan gambar yang ada -->
+        @if($buku->filename)
+        <div class="mb-3">
+            <label>Thumbnail saat ini:</label>
+            <div class="gallery_item mb-2" id="current-thumbnail">
+                <img src="{{ asset('storage/uploads/' . $buku->filename) }}" alt="Thumbnail Buku" class="rounded object-cover object-center" width="200">
+            </div>
+        </div>
+        @endif
+
             <label for="thumbnail">Thumbnail Buku:</label>
             <input type="file" id="thumbnail" name="thumbnail" class="form-control">
         </div>
@@ -51,14 +61,21 @@
         <!-- Display Current Gallery Images -->
         <div>Current Gallery Images:</div>
         <div class="gallery_items mb-3">
-            @foreach($buku->galleries()->get() as $gallery)
-                <div class="gallery_item mb-2">
+            @foreach($buku->galleries as $gallery)
+                <div class="gallery_item mb-2" id="gallery-{{ $gallery->id }}">
                     <img
-                        class="rounded-full object-cover object-center"
+                        class="rounded object-cover object-center"
                         src="{{ asset($gallery->path) }}"
-                        alt=""
+                        alt="Gambar Galeri"
                         width="200"
                     />
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm mt-2 delete-gallery-button"
+                        data-gallery-id="{{ $gallery->id }}"
+                    >
+                        Hapus
+                    </button>
                 </div>
             @endforeach
         </div>
@@ -82,28 +99,65 @@
 </div>
 
 <!-- Include jQuery and Bootstrap Datepicker Scripts -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha384-KyZXEAg3QhqLMpG8r+Knujsl5/3/7dM9ePjA3Fv8U5TkHlxWJttz8P0Z5STZ1qF" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" 
+        integrity="sha384-H+K7U5CnXl1h5ywQd7iiabKP7kH9RVrF8E2eF3ibJkPzBI64WE0K8zUDL91v2g9a" 
+        crossorigin="anonymous"></script>
+
 <script src="{{ asset('js/bootstrap-datepicker.js') }}"></script>
 <script type="text/javascript">
-    $(document).ready(function() {
+    $(document).ready(function () {
+        // Inisialisasi Datepicker
         $('.date').datepicker({
             format: 'yyyy/mm/dd',
             autoclose: true
         });
+
+        // Fungsi Tambah Input Galeri
+        window.addGalleryInput = function () {
+            const galleryContainer = document.getElementById('gallery-inputs');
+            const fileInputDiv = document.createElement('div');
+            fileInputDiv.className = 'file-input mb-3';
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.name = 'gallery[]';
+            input.className = 'form-control';
+
+            fileInputDiv.appendChild(input);
+            galleryContainer.appendChild(fileInputDiv);
+        };
+
+        // Fungsi Hapus Gambar Galeri
+        const deleteButtons = document.querySelectorAll('.delete-gallery-button');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                const galleryId = this.getAttribute('data-gallery-id');
+                const confirmed = confirm('Apakah Anda yakin ingin menghapus gambar ini?');
+
+                if (confirmed) {
+                    // AJAX Request untuk menghapus galeri
+                    fetch(`/gallery/${galleryId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Gambar berhasil dihapus');
+                            document.getElementById(`gallery-${galleryId}`).remove();
+                        } else {
+                            alert(data.message || 'Gagal menghapus gambar');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan saat menghapus gambar');
+                    });
+                }
+            });
+        });
     });
-
-    function addGalleryInput() {
-        const galleryContainer = document.getElementById('gallery-inputs');
-        const fileInputDiv = document.createElement('div');
-        fileInputDiv.className = 'file-input mb-3';
-
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.name = 'gallery[]';
-        input.className = 'form-control';
-
-        fileInputDiv.appendChild(input);
-        galleryContainer.appendChild(fileInputDiv);
-    }
 </script>
 @endsection

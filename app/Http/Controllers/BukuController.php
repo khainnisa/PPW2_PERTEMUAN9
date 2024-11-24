@@ -75,6 +75,11 @@ class BukuController extends Controller
 
     public function destroy($id){
         $buku = Buku::find($id);
+        if (!$buku) {
+            return redirect('/buku')->with('pesan', 'Data buku tidak ditemukan');
+        }
+        $buku->galleries()->delete();
+
         $buku->delete();
 
         return redirect('/buku')->with('pesan', 'Data buku berhasil dihapus');
